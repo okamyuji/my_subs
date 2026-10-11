@@ -10,6 +10,7 @@ my_subsは、自分が払っているサブスクの金額と請求日を管理�
 - 分析画面は、カテゴリごとの月額換算を横棒と割合で表示します。
 - 請求日の当日、1日前、3日前、7日前のいずれかの9:00に通知を出せます。通知はOSの繰り返し予約で出すので、アプリを開かなくても毎回届きます。予約には[flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications)を使っています。
 - 初回請求日が未来の件は、開始前の3回分だけを単発で予約します。開始後に一度アプリを開くと、繰り返し予約へ切り替わります。iOSの予約上限（64件）に合わせて、全体を60件までに抑えています。
+- Androidの設定からアプリを強制停止すると、OSが通知の予約を取り消します（[Android 15の動作変更](https://developer.android.com/about/versions/15/behavior-changes-all#enhanced-stop-states)）。次にアプリを開くと予約し直しますが、止まっている間の通知は届きません。強制停止の後は、アプリを一度開いてください。
 
 ## 開発環境の準備
 
