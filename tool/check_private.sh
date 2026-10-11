@@ -6,14 +6,19 @@
 set -e
 team_id='(DEVELOPMENT_TEAM|DevelopmentTeam)(\[[^]]*\])*"?[[:space:]]*=[[:space:]]*"?[A-Z0-9]'
 if [ "$1" = "--history" ]; then
-  leaked=$(git log --all --format= --name-only -- assets/private ios/Flutter/DevelopmentTeam.xcconfig \
+  if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+    echo "浅いクローンでは履歴を検査できません（fetch-depth: 0 で取得してください）" >&2
+    exit 1
+  fi
+  # git log shows no diff for merge commits unless asked.
+  leaked=$(git log --all --diff-merges=separate --format= --name-only -- assets/private ios/Flutter/DevelopmentTeam.xcconfig \
     | grep -v -e '^$' -e '^assets/private/\.gitkeep$' | sort -u || true)
   if [ -n "$leaked" ]; then
     echo "履歴に公開してはいけないファイルがあります:" >&2
     echo "$leaked" >&2
     exit 1
   fi
-  if git log --all -p --format= -- 'ios/*.pbxproj' 'ios/*.xcconfig' | grep -Eqi "^[+-].*$team_id"; then
+  if git log --all -p --diff-merges=separate --format= -- 'ios/*.pbxproj' 'ios/*.xcconfig' | grep -Eqi "^[+-].*$team_id"; then
     echo "履歴に Team ID が入っています" >&2
     exit 1
   fi

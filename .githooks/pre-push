@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+sh tool/check_private.sh --history
 device=$(adb devices | awk 'NR>1 && $2=="device" {print $1; exit}')
 if [ -z "$device" ]; then
   echo "pre-push: Android 端末が接続されていません。エミュレータを起動してから push してください" >&2
