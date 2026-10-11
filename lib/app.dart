@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'presets.dart';
 import 'screens/analysis_screen.dart';
@@ -46,6 +47,8 @@ class _MySubsAppState extends State<MySubsApp> {
     ];
     return MaterialApp(
       title: 'my_subs',
+      supportedLocales: const [Locale('ja')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: ThemeData(colorSchemeSeed: Colors.teal),
       darkTheme: ThemeData(
         colorSchemeSeed: Colors.teal,

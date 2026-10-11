@@ -91,6 +91,26 @@ void main() {
     expect(find.text('Music'), findsOneWidget);
   });
 
+  testWidgets('date picker uses Japanese and updates the first billing date', (
+    tester,
+  ) async {
+    final store = await pumpApp(tester);
+    await tester.tap(find.byKey(const Key('add')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('初回請求日'));
+    await tester.pumpAndSettle();
+    expect(find.text('キャンセル'), findsOneWidget);
+    await tester.tap(find.text('20'));
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('2026/10/20'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('name')), 'X');
+    await tester.enterText(find.byKey(const Key('amount')), '1');
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.pumpAndSettle();
+    expect(store.items.single.firstBillingDate, DateTime(2026, 10, 20));
+  });
+
   testWidgets('preset chip fills name, category and interval', (tester) async {
     final store = await pumpApp(
       tester,
