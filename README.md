@@ -22,7 +22,7 @@ git config core.hooksPath .githooks
 
 iOS実機向けにビルドするときは、Apple DeveloperのTeam IDを`ios/Flutter/DevelopmentTeam.xcconfig`に`DEVELOPMENT_TEAM = <Team ID>`の形で書きます。このファイルは`.gitignore`の対象です。Xcodeの署名画面でチームを選ぶと`project.pbxproj`にTeam IDが書き込まれてしまうので、署名画面での選択は避けてください。
 
-pre-commitは、フォーマット、静的解析、テスト、カバレッジ80%以上の判定を順に実行します。pre-pushは接続中のAndroid端末でE2Eテストを実行するので、push前にエミュレータを起動しておいてください。GitHub Actionsのワークフローも、pull requestごとに同じ検証とE2Eテストを実行する構成です。
+pre-commitは、フォーマット、静的解析、テスト、カバレッジ80%以上の判定を順に実行します。pre-pushは接続中のAndroid端末でE2Eテストを実行するので、push前にエミュレータを起動しておいてください。GitHub Actionsのワークフローは、pushとpull requestごとに同じ検証を実行します。E2EテストはCIで実行せず、pre-pushだけで実行します。
 
 ## アプリアイコン
 
