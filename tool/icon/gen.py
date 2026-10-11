@@ -157,6 +157,13 @@ def android(work):
     for density, scale in DENSITIES.items():
         render(legacy, res / f"mipmap-{density}/ic_launcher.png", round(48 * scale))
 
+    # Status-bar icon: Android uses only the alpha channel, so the themed
+    # silhouette is reused, cropped to the artwork.
+    status = work / "ic_stat_notify.svg"
+    status.write_text(svg(MONO, "152 149 720 720"))
+    for density, scale in DENSITIES.items():
+        render(status, res / f"drawable-{density}/ic_stat_notify.png", round(24 * scale))
+
     anydpi = res / "mipmap-anydpi-v26"
     anydpi.mkdir(exist_ok=True)
     (anydpi / "ic_launcher.xml").write_text(

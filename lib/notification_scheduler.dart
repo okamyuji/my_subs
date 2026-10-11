@@ -1,14 +1,26 @@
 import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'notification_plan.dart';
 import 'subscription.dart';
 
+// The default database omits legacy ids such as "GMT" that Android's
+// ZoneId.systemDefault() can return; an unknown id must not stop startup.
+tz.Location resolveLocation(String id) {
+  tzdata.initializeTimeZones();
+  try {
+    return tz.getLocation(id);
+  } on tz.LocationNotFoundException {
+    return tz.UTC;
+  }
+}
+
 class NotificationScheduler {
   final _plugin = FlutterLocalNotificationsPlugin();
+  Future<void> _queue = Future.value();
 
   /// null until the user answers the permission prompt.
   final enabled = ValueNotifier<bool?>(null);
@@ -24,12 +36,11 @@ class NotificationScheduler {
   );
 
   Future<void> init() async {
-    tzdata.initializeTimeZones();
     final info = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(info.identifier));
+    tz.setLocalLocation(resolveLocation(info.identifier));
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('ic_stat_notify'),
         // Asking inside initialize() would block startup until answered.
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,
@@ -55,7 +66,12 @@ class NotificationScheduler {
     enabled.value = granted ?? false;
   }
 
-  Future<void> reschedule(List<Subscription> subs) async {
+  // cancelAll + renumbering is not atomic; overlapping runs would leave the
+  // older plan's tail in the OS, so runs are queued.
+  Future<void> reschedule(List<Subscription> subs) =>
+      _queue = _queue.catchError((Object _) {}).then((_) => _run(subs));
+
+  Future<void> _run(List<Subscription> subs) async {
     await _plugin.cancelAll();
     if (enabled.value != true) return;
     final (:plans, overLimit: over) = planNotifications(subs, DateTime.now());
@@ -67,7 +83,7 @@ class NotificationScheduler {
         notificationDetails: _details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         title: '請求日のお知らせ',
-        body: notificationBody(plans[i].sub),
+        body: notificationBody(plans[i]),
         matchDateTimeComponents: switch (plans[i].repeat) {
           NotificationRepeat.monthly => DateTimeComponents.dayOfMonthAndTime,
           NotificationRepeat.yearly => DateTimeComponents.dateAndTime,

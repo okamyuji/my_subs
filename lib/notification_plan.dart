@@ -69,7 +69,13 @@ List<PlannedNotification> _planOne(Subscription s, int days, DateTime now) {
   );
 }
 
-String notificationBody(Subscription s) {
+String notificationBody(PlannedNotification p) {
+  final s = p.sub;
+  // A yearly repeat firing in February is one day off in leap years, so it
+  // must not claim an exact lead time.
+  if (p.repeat == NotificationRepeat.yearly && p.at.month == 2) {
+    return '${s.name}の請求日が近づいています（${yen(s.amountYen)}）';
+  }
   final when = switch (s.notifyDaysBefore) {
     0 => '今日',
     1 => '明日',

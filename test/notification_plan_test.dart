@@ -102,17 +102,62 @@ void main() {
   });
 
   test('body names the service, lead time and amount', () {
-    expect(
-      notificationBody(sub('Video', DateTime(2026, 1, 20), 1)),
-      'Videoの請求日は明日です（¥1,200）',
+    String body(int days) => notificationBody(
+      planNotifications([
+        sub('Video', DateTime(2026, 1, 20), days),
+      ], now).plans.first,
     );
-    expect(
-      notificationBody(sub('Video', DateTime(2026, 1, 20), 0)),
-      'Videoの請求日は今日です（¥1,200）',
-    );
-    expect(
-      notificationBody(sub('Video', DateTime(2026, 1, 20), 3)),
-      'Videoの請求日は3日後です（¥1,200）',
-    );
+    expect(body(1), 'Videoの請求日は明日です（¥1,200）');
+    expect(body(0), 'Videoの請求日は今日です（¥1,200）');
+    expect(body(3), 'Videoの請求日は3日後です（¥1,200）');
+  });
+
+  test('February yearly repeats avoid a lead time that leap years break', () {
+    final plans = planNotifications([
+      sub('Video', DateTime(2026, 1, 31), 1),
+    ], now).plans;
+    final feb = plans.singleWhere((p) => p.at.month == 2);
+    expect(notificationBody(feb), 'Videoの請求日が近づいています（¥1,200）');
+    final oct = plans.firstWhere((p) => p.at.month == 10);
+    expect(notificationBody(oct), 'Videoの請求日は明日です（¥1,200）');
+  });
+
+  test('day 28 stays monthly, day 29 becomes yearly', () {
+    NotificationRepeat repeat(int day) => planNotifications([
+      sub('a', DateTime(2026, 1, day), 0),
+    ], now).plans.first.repeat;
+    expect(repeat(28), NotificationRepeat.monthly);
+    expect(repeat(29), NotificationRepeat.yearly);
+  });
+
+  test('a lead time ending on the 1st stays monthly', () {
+    final plans = planNotifications([
+      sub('a', DateTime(2026, 1, 2), 1),
+    ], now).plans;
+    expect(plans.single.repeat, NotificationRepeat.monthly);
+    expect(plans.single.at, DateTime(2026, 11, 1, 9));
+  });
+
+  test('a start whose first notification has passed is already monthly', () {
+    final plans = planNotifications([
+      sub('a', DateTime(2026, 10, 12), 3),
+    ], now).plans;
+    expect(plans.single.repeat, NotificationRepeat.monthly);
+    expect(plans.single.at, DateTime(2026, 11, 9, 9));
+  });
+
+  test('exactly 60 plans is not over the limit', () {
+    final result = planNotifications([
+      for (var i = 0; i < 5; i++) sub('s$i', DateTime(2026, 1, 31), 0),
+    ], now);
+    expect(result.plans, hasLength(60));
+    expect(result.overLimit, isFalse);
+  });
+
+  test('a Feb 28 repeat already past today moves to next year', () {
+    final plans = planNotifications([
+      sub('a', DateTime(2024, 2, 29), 0, interval: 12),
+    ], DateTime(2028, 2, 28, 10)).plans;
+    expect(plans.single.at, DateTime(2029, 2, 28, 9));
   });
 }
