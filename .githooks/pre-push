@@ -1,9 +1,11 @@
 #!/bin/sh
 set -e
 sh tool/check_private.sh --history
-device=$(adb devices | awk 'NR>1 && $2=="device" {print $1; exit}')
+# Emulators only: the E2E run clears the app's data and uninstalls it, which
+# would wipe a real phone's subscriptions.
+device=$(adb devices | awk 'NR>1 && $1 ~ /^emulator-/ && $2=="device" {print $1; exit}')
 if [ -z "$device" ]; then
-  echo "pre-push: Android 端末が接続されていません。エミュレータを起動してから push してください" >&2
+  echo "pre-push: エミュレータが接続されていません。エミュレータを起動してから push してください（実機では E2E を走らせません）" >&2
   exit 1
 fi
 # A permission prompt left by an earlier run blocks the next launch.
