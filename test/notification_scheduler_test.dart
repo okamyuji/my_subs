@@ -23,10 +23,13 @@ void main() {
   // Mirrors what the OS holds: cancelAll empties it, zonedSchedule adds.
   final pending = <int, Map<Object?, Object?>>{};
   final methods = <String>[];
+  // Canned answers for permission queries, by method name.
+  final replies = <String, Object?>{};
 
   setUp(() {
     pending.clear();
     methods.clear();
+    replies.clear();
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     AndroidFlutterLocalNotificationsPlugin.registerWith();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -38,7 +41,7 @@ void main() {
             final args = call.arguments as Map<Object?, Object?>;
             pending[args['id']! as int] = args;
           }
-          return null;
+          return replies[call.method];
         });
     tz.setLocalLocation(resolveLocation('Asia/Tokyo'));
   });
@@ -57,6 +60,64 @@ void main() {
 
   test('falls back to UTC for an unknown zone id', () {
     expect(resolveLocation('Nowhere/Zone'), tz.UTC);
+  });
+
+  group('permission', () {
+    // iOS answered didGrant: 0 to the request although the user had just
+    // allowed it; its settings flipped to enabled milliseconds later.
+    test('trusts the OS settings when iOS reports a stale refusal', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      IOSFlutterLocalNotificationsPlugin.registerWith();
+      replies['requestPermissions'] = false;
+      replies['checkPermissions'] = {'isEnabled': true};
+      final scheduler = NotificationScheduler();
+      await scheduler.requestPermission();
+      expect(scheduler.enabled.value, isTrue);
+    });
+
+    test('stays off when the OS settings agree', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      IOSFlutterLocalNotificationsPlugin.registerWith();
+      replies['requestPermissions'] = false;
+      replies['checkPermissions'] = {'isEnabled': false};
+      final scheduler = NotificationScheduler();
+      await scheduler.requestPermission();
+      expect(scheduler.enabled.value, isFalse);
+    });
+
+    test('no answer at all counts as off', () async {
+      final scheduler = NotificationScheduler();
+      await scheduler.requestPermission();
+      expect(scheduler.enabled.value, isFalse);
+    });
+
+    test('does not re-read when the request was granted', () async {
+      replies['requestNotificationsPermission'] = true;
+      final scheduler = NotificationScheduler();
+      await scheduler.requestPermission();
+      expect(scheduler.enabled.value, isTrue);
+      expect(methods, ['requestNotificationsPermission']);
+    });
+
+    test('picks up a change made in the system settings', () async {
+      final scheduler = NotificationScheduler()..enabled.value = false;
+      replies['areNotificationsEnabled'] = true;
+      await scheduler.refreshPermission();
+      expect(scheduler.enabled.value, isTrue);
+    });
+
+    test('keeps the last answer when the OS gives none', () async {
+      final scheduler = NotificationScheduler()..enabled.value = true;
+      await scheduler.refreshPermission();
+      expect(scheduler.enabled.value, isTrue);
+    });
+
+    test('leaves an unanswered prompt alone', () async {
+      final scheduler = NotificationScheduler();
+      await scheduler.refreshPermission();
+      expect(scheduler.enabled.value, isNull);
+      expect(methods, isEmpty);
+    });
   });
 
   test('only cancels when notifications are not enabled', () async {

@@ -51,19 +51,37 @@ class NotificationScheduler {
     );
   }
 
+  AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  IOSFlutterLocalNotificationsPlugin? get _ios => _plugin
+      .resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin
+      >();
+
   Future<void> requestPermission() async {
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    final ios = _plugin
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >();
+    final android = _android;
     final granted = android != null
         ? await android.requestNotificationsPermission()
-        : await ios?.requestPermissions(alert: true, sound: true);
+        : await _ios?.requestPermissions(alert: true, sound: true);
     enabled.value = granted ?? false;
+    // iOS can answer the request with didGrant: 0 although the user has just
+    // allowed it (its settings flip to enabled milliseconds later), so a
+    // refusal is checked against the settings.
+    if (granted != true) await refreshPermission();
+  }
+
+  /// Re-reads the OS setting, e.g. after the user changed it in Settings.
+  /// An unanswered prompt (null) is left alone: the OS reports it as off.
+  Future<void> refreshPermission() async {
+    if (enabled.value == null) return;
+    final android = _android;
+    final on = android != null
+        ? await android.areNotificationsEnabled()
+        : (await _ios?.checkPermissions())?.isEnabled;
+    if (on != null) enabled.value = on;
   }
 
   // cancelAll + renumbering is not atomic; overlapping runs would leave the
