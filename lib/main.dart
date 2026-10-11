@@ -25,6 +25,7 @@ Future<void> main() async {
       presets: presets,
       notificationsEnabled: scheduler.enabled,
       notificationsOverLimit: scheduler.overLimit,
+      onResume: () => scheduler.reschedule(store.items),
     ),
   );
   // Not awaited before runApp: the prompt would hold the first frame until

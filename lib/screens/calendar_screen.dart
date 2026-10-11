@@ -50,9 +50,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     tooltip: '前の月',
                     onPressed: () => _move(-1),
                   ),
-                  Text(
-                    '${_month.year}年${_month.month}月',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '${_month.year}年${_month.month}月',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
                   ),
                   IconButton(
                     key: const Key('next'),
@@ -81,21 +86,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 shape: BoxShape.circle,
                               )
                             : null,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('$d'),
-                            if (byDay.containsKey(d))
-                              Container(
-                                key: Key('dot-$d'),
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: scheme.primary,
-                                  shape: BoxShape.circle,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('$d'),
+                              if (byDay.containsKey(d))
+                                Container(
+                                  key: Key('dot-$d'),
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: scheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

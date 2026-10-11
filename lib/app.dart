@@ -16,6 +16,7 @@ class MySubsApp extends StatefulWidget {
     required this.notificationsEnabled,
     required this.notificationsOverLimit,
     this.clock = DateTime.now,
+    this.onResume,
   });
 
   final SubscriptionStore store;
@@ -24,12 +25,36 @@ class MySubsApp extends StatefulWidget {
   final ValueListenable<bool> notificationsOverLimit;
   final DateTime Function() clock;
 
+  /// Called when the app returns to the foreground, e.g. to reschedule.
+  final Future<void> Function()? onResume;
+
   @override
   State<MySubsApp> createState() => _MySubsAppState();
 }
 
 class _MySubsAppState extends State<MySubsApp> {
   var _tab = 0;
+
+  // `today` is read in build, so a resume after midnight must rebuild; a
+  // future start also becomes a calendar repeat only on the next reschedule.
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        setState(() {});
+        widget.onResume?.call();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

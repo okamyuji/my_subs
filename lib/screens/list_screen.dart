@@ -129,8 +129,13 @@ class _Total extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      Text(label),
-      Text(value, style: Theme.of(context).textTheme.titleLarge),
+      Expanded(child: Text(label)),
+      Flexible(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(value, style: Theme.of(context).textTheme.titleLarge),
+        ),
+      ),
     ],
   );
 }

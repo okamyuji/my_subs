@@ -16,15 +16,26 @@ Future<SubscriptionStore> pumpApp(
   bool? notifications = true,
   bool overLimit = false,
   List<Preset> presets = const [],
+  String? savedRaw,
+  DateTime Function()? clock,
+  Future<void> Function()? onResume,
+  Future<void> Function(List<Subscription>)? onChanged,
+  Size size = const Size(1080, 2400),
 }) async {
   // Phone-sized surface (Pixel 8); the default 800x600 pushes the calendar's
   // day list below the fold.
-  tester.view.physicalSize = const Size(1080, 2400);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 2.625;
   addTearDown(tester.view.reset);
   SharedPreferencesAsyncPlatform.instance =
       InMemorySharedPreferencesAsync.empty();
-  final store = SubscriptionStore(SharedPreferencesAsync());
+  if (savedRaw != null) {
+    await SharedPreferencesAsync().setString(SubscriptionStore.key, savedRaw);
+  }
+  final store = SubscriptionStore(
+    SharedPreferencesAsync(),
+    onChanged: onChanged,
+  );
   await store.load();
   for (final s in initial) {
     await store.upsert(s);
@@ -35,7 +46,8 @@ Future<SubscriptionStore> pumpApp(
       presets: presets,
       notificationsEnabled: ValueNotifier(notifications),
       notificationsOverLimit: ValueNotifier(overLimit),
-      clock: () => today,
+      clock: clock ?? () => today,
+      onResume: onResume,
     ),
   );
   await tester.pumpAndSettle();
@@ -111,6 +123,55 @@ void main() {
     expect(store.items.single.firstBillingDate, DateTime(2026, 10, 20));
   });
 
+  testWidgets('a double tap on save adds one item and stays on the list', (
+    tester,
+  ) async {
+    final store = await pumpApp(
+      tester,
+      onChanged: (items) => items.isEmpty
+          ? Future.value()
+          : Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.tap(find.byKey(const Key('add')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('name')), 'Twice');
+    await tester.enterText(find.byKey(const Key('amount')), '500');
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.pump(const Duration(milliseconds: 20));
+    await tester.tap(find.byKey(const Key('save')), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(store.items, hasLength(1));
+    expect(find.byKey(const Key('add')), findsOneWidget);
+  });
+
+  testWidgets('rejects a blank name and caps the amount at 9 digits', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await tester.tap(find.byKey(const Key('add')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('name')), '   ');
+    await tester.enterText(find.byKey(const Key('amount')), '1234567890');
+    await tester.tap(find.byKey(const Key('save')));
+    await tester.pumpAndSettle();
+    expect(find.text('名前を入力してください'), findsOneWidget);
+    expect(find.text('123456789'), findsOneWidget);
+  });
+
+  testWidgets('totals fit a 320dp screen at 200% text', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpApp(
+      tester,
+      size: const Size(840, 1680),
+      initial: [sub('Big', 999999999, DateTime(2026, 1, 5))],
+    );
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('カレンダー'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('preset chip fills name, category and interval', (tester) async {
     final store = await pumpApp(
       tester,
@@ -153,6 +214,31 @@ void main() {
     await pumpApp(tester, notifications: null);
     expect(find.text('通知が無効です'), findsNothing);
     expect(find.textContaining('通知の上限'), findsNothing);
+  });
+
+  testWidgets('refreshes today and reschedules when the app resumes', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 10, 31, 23, 59);
+    var resumed = 0;
+    await pumpApp(
+      tester,
+      initial: [sub('A', 1000, DateTime(2026, 1, 31))],
+      clock: () => now,
+      onResume: () async => resumed++,
+    );
+    expect(find.textContaining('次回 10/31'), findsOneWidget);
+    now = DateTime(2026, 11, 1, 0, 1);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('次回 11/30'), findsOneWidget);
+    expect(resumed, 1);
+  });
+
+  testWidgets('tells the user when saved data was unreadable', (tester) async {
+    await pumpApp(tester, savedRaw: '{broken');
+    expect(find.textContaining('保存データを読めなかったため退避'), findsOneWidget);
   });
 
   testWidgets('warns when notifications exceed the limit', (tester) async {

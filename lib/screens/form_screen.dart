@@ -26,6 +26,9 @@ class FormScreen extends StatefulWidget {
 
 class _FormScreenState extends State<FormScreen> {
   final _formKey = GlobalKey<FormState>();
+  // Saving awaits rescheduling; a second tap in that window would add a
+  // duplicate and pop the list route too.
+  var _busy = false;
   late final _name = TextEditingController(text: widget.initial?.name);
   late final _amount = TextEditingController(
     text: widget.initial?.amountYen.toString(),
@@ -63,7 +66,8 @@ class _FormScreenState extends State<FormScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_busy || !_formKey.currentState!.validate()) return;
+    _busy = true;
     await widget.store.upsert(
       Subscription(
         id:
@@ -99,7 +103,8 @@ class _FormScreenState extends State<FormScreen> {
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true || _busy) return;
+    _busy = true;
     await widget.store.delete(widget.initial!.id);
     if (mounted) Navigator.of(context).pop();
   }
@@ -180,7 +185,10 @@ class _FormScreenState extends State<FormScreen> {
               controller: _amount,
               decoration: const InputDecoration(labelText: '金額（円）'),
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(9),
+              ],
               validator: (v) =>
                   (int.tryParse(v ?? '') ?? 0) < 1 ? '1以上の整数を入力してください' : null,
             ),
