@@ -39,3 +39,7 @@ pre-commitは、フォーマット、静的解析、テスト、カバレッジ8
 ```
 
 `category`には`video`、`music`、`software`、`cloud`、`news`、`game`、`life`、`other`のいずれかを指定します。このファイルは個人の利用状況を含むため、`.gitignore`の対象です。誤って`git add -f`した場合も、pre-commitがcommitを止めます。ファイルが無いときは、候補チップを出さずにアプリが動作します。
+
+## ライセンス
+
+MIT Licenseで公開しています。全文は[LICENSE](LICENSE)を参照してください。
