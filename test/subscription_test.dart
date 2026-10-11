@@ -43,6 +43,21 @@ void main() {
     );
   });
 
+  test('rejects values outside the allowed choices', () {
+    for (final bad in [
+      {'intervalMonths': 0},
+      {'intervalMonths': 2},
+      {'amountYen': 0},
+      {'notifyDaysBefore': 2},
+    ]) {
+      expect(
+        () => Subscription.fromJson({...sub.toJson(), ...bad}),
+        throwsFormatException,
+        reason: '$bad',
+      );
+    }
+  });
+
   test('labels', () {
     expect(intervalLabel(1), '毎月');
     expect(intervalLabel(3), '3か月ごと');

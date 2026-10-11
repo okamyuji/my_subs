@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_subs/store.dart';
 import 'package:my_subs/subscription.dart';
@@ -13,6 +15,8 @@ Subscription sub(String id, {int amount = 100}) => Subscription(
   intervalMonths: 1,
   firstBillingDate: DateTime(2026, 1, 1),
 );
+
+String _json(Map<String, Object?> m) => jsonEncode(m);
 
 void main() {
   late SharedPreferencesAsync prefs;
@@ -57,6 +61,28 @@ void main() {
     expect(store.recoveredFromCorruption, isTrue);
     expect(await prefs.getString(SubscriptionStore.corruptKey), '{not json');
     expect(await prefs.getString(SubscriptionStore.key), isNull);
+  });
+
+  test('treats out-of-range values as corrupt', () async {
+    final bad = {...sub('a').toJson(), 'intervalMonths': 0};
+    await prefs.setString(SubscriptionStore.key, '[${_json(bad)}]');
+    final store = SubscriptionStore(prefs);
+    await store.load();
+    expect(store.recoveredFromCorruption, isTrue);
+    expect(store.items, isEmpty);
+  });
+
+  test('keeps an earlier corrupt backup', () async {
+    await prefs.setString(SubscriptionStore.key, 'first');
+    await SubscriptionStore(prefs).load();
+    await prefs.setString(SubscriptionStore.key, 'second');
+    await SubscriptionStore(prefs).load();
+    final backups = <String?>[
+      for (final k in await prefs.getKeys())
+        if (k.startsWith(SubscriptionStore.corruptKey))
+          await prefs.getString(k),
+    ];
+    expect(backups, unorderedEquals(['first', 'second']));
   });
 
   test('treats wrong shape as corrupt', () async {

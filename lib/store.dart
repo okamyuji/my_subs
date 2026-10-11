@@ -29,7 +29,11 @@ class SubscriptionStore extends ChangeNotifier {
       } catch (_) {
         // Back up before dropping so a bad write or schema change never
         // destroys data silently.
-        await _prefs.setString(corruptKey, raw);
+        final taken = await _prefs.getString(corruptKey) != null;
+        final backupKey = taken
+            ? '${corruptKey}_${DateTime.now().millisecondsSinceEpoch}'
+            : corruptKey;
+        await _prefs.setString(backupKey, raw);
         await _prefs.remove(key);
         _items = const [];
         recoveredFromCorruption = true;

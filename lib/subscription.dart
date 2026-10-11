@@ -40,16 +40,26 @@ class Subscription {
     this.memo = '',
   });
 
-  factory Subscription.fromJson(Map<String, Object?> json) => Subscription(
-    id: json['id']! as String,
-    name: json['name']! as String,
-    category: Category.values.byName(json['category']! as String),
-    amountYen: json['amountYen']! as int,
-    intervalMonths: json['intervalMonths']! as int,
-    firstBillingDate: DateTime.parse(json['firstBillingDate']! as String),
-    notifyDaysBefore: json['notifyDaysBefore'] as int?,
-    memo: json['memo'] as String? ?? '',
-  );
+  // Out-of-range values would hang the billing loops (interval 0), so they
+  // are treated like any other corrupt data and go to the backup path.
+  factory Subscription.fromJson(Map<String, Object?> json) {
+    final s = Subscription(
+      id: json['id']! as String,
+      name: json['name']! as String,
+      category: Category.values.byName(json['category']! as String),
+      amountYen: json['amountYen']! as int,
+      intervalMonths: json['intervalMonths']! as int,
+      firstBillingDate: DateTime.parse(json['firstBillingDate']! as String),
+      notifyDaysBefore: json['notifyDaysBefore'] as int?,
+      memo: json['memo'] as String? ?? '',
+    );
+    if (s.amountYen < 1 ||
+        !intervalChoices.contains(s.intervalMonths) ||
+        !notifyChoices.contains(s.notifyDaysBefore)) {
+      throw FormatException('out-of-range subscription', json);
+    }
+    return s;
+  }
 
   final String id;
   final String name;
