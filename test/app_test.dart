@@ -14,6 +14,7 @@ Future<SubscriptionStore> pumpApp(
   WidgetTester tester, {
   List<Subscription> initial = const [],
   bool? notifications = true,
+  bool overLimit = false,
   List<Preset> presets = const [],
 }) async {
   // Phone-sized surface (Pixel 8); the default 800x600 pushes the calendar's
@@ -33,6 +34,7 @@ Future<SubscriptionStore> pumpApp(
       store: store,
       presets: presets,
       notificationsEnabled: ValueNotifier(notifications),
+      notificationsOverLimit: ValueNotifier(overLimit),
       clock: () => today,
     ),
   );
@@ -130,6 +132,12 @@ void main() {
   testWidgets('no banner while permission is unanswered', (tester) async {
     await pumpApp(tester, notifications: null);
     expect(find.text('通知が無効です'), findsNothing);
+    expect(find.textContaining('通知の上限'), findsNothing);
+  });
+
+  testWidgets('warns when notifications exceed the limit', (tester) async {
+    await pumpApp(tester, overLimit: true);
+    expect(find.textContaining('通知の上限（60件）'), findsOneWidget);
   });
 
   testWidgets('edit and delete with confirmation', (tester) async {

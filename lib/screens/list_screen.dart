@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
 import '../billing.dart';
+import '../notification_plan.dart';
 import '../presets.dart';
 import '../store.dart';
 import '../subscription.dart';
@@ -14,12 +15,14 @@ class ListScreen extends StatelessWidget {
     required this.presets,
     required this.today,
     required this.notificationsEnabled,
+    required this.notificationsOverLimit,
   });
 
   final SubscriptionStore store;
   final List<Preset> presets;
   final DateTime today;
   final ValueListenable<bool?> notificationsEnabled;
+  final ValueListenable<bool> notificationsOverLimit;
 
   void _open(BuildContext context, Subscription? initial) =>
       Navigator.of(context).push(
@@ -43,7 +46,11 @@ class ListScreen extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
       body: ListenableBuilder(
-        listenable: Listenable.merge([store, notificationsEnabled]),
+        listenable: Listenable.merge([
+          store,
+          notificationsEnabled,
+          notificationsOverLimit,
+        ]),
         builder: (context, _) {
           final subs = [...store.items]
             ..sort(
@@ -60,6 +67,11 @@ class ListScreen extends StatelessWidget {
                 const ListTile(
                   leading: Icon(Icons.notifications_off),
                   title: Text('通知が無効です'),
+                ),
+              if (notificationsOverLimit.value)
+                const ListTile(
+                  leading: Icon(Icons.notification_important),
+                  title: Text('通知の上限（$notificationCap件）を超えたため、一部の通知を予約できていません'),
                 ),
               if (store.recoveredFromCorruption)
                 const ListTile(

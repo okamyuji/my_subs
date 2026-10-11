@@ -12,6 +12,7 @@ class NotificationScheduler {
 
   /// null until the user answers the permission prompt.
   final enabled = ValueNotifier<bool?>(null);
+  final overLimit = ValueNotifier<bool>(false);
 
   static const _details = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -57,7 +58,8 @@ class NotificationScheduler {
   Future<void> reschedule(List<Subscription> subs) async {
     await _plugin.cancelAll();
     if (enabled.value != true) return;
-    final plans = planNotifications(subs, DateTime.now());
+    final (:plans, overLimit: over) = planNotifications(subs, DateTime.now());
+    overLimit.value = over;
     for (var i = 0; i < plans.length; i++) {
       await _plugin.zonedSchedule(
         id: i,
@@ -65,7 +67,12 @@ class NotificationScheduler {
         notificationDetails: _details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         title: '請求日のお知らせ',
-        body: notificationBody(plans[i]),
+        body: notificationBody(plans[i].sub),
+        matchDateTimeComponents: switch (plans[i].repeat) {
+          NotificationRepeat.monthly => DateTimeComponents.dayOfMonthAndTime,
+          NotificationRepeat.yearly => DateTimeComponents.dateAndTime,
+          NotificationRepeat.none => null,
+        },
       );
     }
   }

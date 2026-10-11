@@ -13,12 +13,14 @@ class MySubsApp extends StatefulWidget {
     required this.store,
     required this.presets,
     required this.notificationsEnabled,
+    required this.notificationsOverLimit,
     this.clock = DateTime.now,
   });
 
   final SubscriptionStore store;
   final List<Preset> presets;
   final ValueListenable<bool?> notificationsEnabled;
+  final ValueListenable<bool> notificationsOverLimit;
   final DateTime Function() clock;
 
   @override
@@ -37,6 +39,7 @@ class _MySubsAppState extends State<MySubsApp> {
         presets: widget.presets,
         today: today,
         notificationsEnabled: widget.notificationsEnabled,
+        notificationsOverLimit: widget.notificationsOverLimit,
       ),
       CalendarScreen(store: widget.store, today: today),
       AnalysisScreen(store: widget.store, today: today),

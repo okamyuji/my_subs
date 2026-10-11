@@ -24,6 +24,7 @@ Future<void> main() async {
       store: store,
       presets: presets,
       notificationsEnabled: scheduler.enabled,
+      notificationsOverLimit: scheduler.overLimit,
     ),
   );
   // Not awaited before runApp: the prompt would hold the first frame until
