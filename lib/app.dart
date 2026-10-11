@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'calendar_sync.dart';
 import 'presets.dart';
 import 'screens/analysis_screen.dart';
 import 'screens/calendar_screen.dart';
@@ -18,7 +17,6 @@ class MySubsApp extends StatefulWidget {
     required this.notificationsOverLimit,
     this.clock = DateTime.now,
     this.onResume,
-    this.calendar,
   });
 
   final SubscriptionStore store;
@@ -29,9 +27,6 @@ class MySubsApp extends StatefulWidget {
 
   /// Called when the app returns to the foreground, e.g. to reschedule.
   final Future<void> Function()? onResume;
-
-  /// null where calendar sync is not offered (see calendarSyncSupported).
-  final CalendarSync? calendar;
 
   @override
   State<MySubsApp> createState() => _MySubsAppState();
@@ -71,7 +66,6 @@ class _MySubsAppState extends State<MySubsApp> {
         today: today,
         notificationsEnabled: widget.notificationsEnabled,
         notificationsOverLimit: widget.notificationsOverLimit,
-        calendar: widget.calendar,
       ),
       CalendarScreen(store: widget.store, today: today),
       AnalysisScreen(store: widget.store, today: today),

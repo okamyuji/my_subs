@@ -65,20 +65,6 @@ void main() {
     expect(methods, ['cancelAll']);
   });
 
-  test('only cancels while the calendar owns the reminders', () async {
-    var calendarOn = true;
-    final scheduler = NotificationScheduler(suppressed: () => calendarOn)
-      ..enabled.value = true
-      ..overLimit.value = true;
-    await scheduler.reschedule([monthly]);
-    expect(methods, ['cancelAll']);
-    expect(pending, isEmpty);
-    expect(scheduler.overLimit.value, isFalse);
-    calendarOn = false;
-    await scheduler.reschedule([monthly]);
-    expect(pending, hasLength(1));
-  });
-
   test('maps repeats to calendar components and numbers ids from 0', () async {
     final scheduler = NotificationScheduler()..enabled.value = true;
     await scheduler.reschedule([monthly, monthEnd, future]);

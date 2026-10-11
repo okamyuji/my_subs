@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
 import '../billing.dart';
-import '../calendar_sync.dart';
 import '../notification_plan.dart';
 import '../presets.dart';
 import '../store.dart';
@@ -17,7 +16,6 @@ class ListScreen extends StatelessWidget {
     required this.today,
     required this.notificationsEnabled,
     required this.notificationsOverLimit,
-    this.calendar,
   });
 
   final SubscriptionStore store;
@@ -25,7 +23,6 @@ class ListScreen extends StatelessWidget {
   final DateTime today;
   final ValueListenable<bool?> notificationsEnabled;
   final ValueListenable<bool> notificationsOverLimit;
-  final CalendarSync? calendar;
 
   void _open(BuildContext context, Subscription? initial) =>
       Navigator.of(context).push(
@@ -42,12 +39,7 @@ class ListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('サブスク'),
-        actions: [
-          if (calendar case final calendar?) _CalendarSwitch(calendar, store),
-        ],
-      ),
+      appBar: AppBar(title: const Text('サブスク')),
       floatingActionButton: FloatingActionButton(
         key: const Key('add'),
         onPressed: () => _open(context, null),
@@ -58,7 +50,6 @@ class ListScreen extends StatelessWidget {
           store,
           notificationsEnabled,
           notificationsOverLimit,
-          ?calendar?.failed,
         ]),
         builder: (context, _) {
           final subs = [...store.items]
@@ -81,11 +72,6 @@ class ListScreen extends StatelessWidget {
                 const ListTile(
                   leading: Icon(Icons.notification_important),
                   title: Text('通知の上限（$notificationCap件）を超えたため、一部の通知を予約できていません'),
-                ),
-              if (calendar?.failed.value ?? false)
-                const ListTile(
-                  leading: Icon(Icons.event_busy),
-                  title: Text('カレンダーに登録できませんでした'),
                 ),
               if (store.recoveredFromCorruption)
                 const ListTile(
@@ -151,39 +137,5 @@ class _Total extends StatelessWidget {
         ),
       ),
     ],
-  );
-}
-
-class _CalendarSwitch extends StatelessWidget {
-  const _CalendarSwitch(this.calendar, this.store);
-
-  final CalendarSync calendar;
-  final SubscriptionStore store;
-
-  Future<void> _toggle(BuildContext context, bool on) async {
-    final messenger = ScaffoldMessenger.of(context);
-    if (!await calendar.setEnabled(on, store.items)) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('カレンダーへのアクセスが許可されていません')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: calendar.enabled,
-    builder: (context, on, _) => Row(
-      children: [
-        const Text('カレンダー'),
-        Semantics(
-          label: 'カレンダーにも登録',
-          child: Switch(
-            key: const Key('calendarSync'),
-            value: on,
-            onChanged: (v) => _toggle(context, v),
-          ),
-        ),
-      ],
-    ),
   );
 }

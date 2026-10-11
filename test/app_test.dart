@@ -1,16 +1,12 @@
-import 'package:device_calendar_plus_platform_interface/device_calendar_plus_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_subs/app.dart';
-import 'package:my_subs/calendar_sync.dart';
 import 'package:my_subs/presets.dart';
 import 'package:my_subs/store.dart';
 import 'package:my_subs/subscription.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
-
-import 'fake_calendar_platform.dart';
 
 final today = DateTime(2026, 10, 11);
 
@@ -24,7 +20,6 @@ Future<SubscriptionStore> pumpApp(
   DateTime Function()? clock,
   Future<void> Function()? onResume,
   Future<void> Function(List<Subscription>)? onChanged,
-  CalendarSync Function()? calendar,
   Size size = const Size(1080, 2400),
 }) async {
   // Phone-sized surface (Pixel 8); the default 800x600 pushes the calendar's
@@ -53,7 +48,6 @@ Future<SubscriptionStore> pumpApp(
       notificationsOverLimit: ValueNotifier(overLimit),
       clock: clock ?? () => today,
       onResume: onResume,
-      calendar: calendar?.call(),
     ),
   );
   await tester.pumpAndSettle();
@@ -322,58 +316,5 @@ void main() {
     await tester.tap(find.text('分析'));
     await tester.pumpAndSettle();
     expect(find.text('登録がありません'), findsOneWidget);
-  });
-
-  group('calendar switch', () {
-    late FakeCalendarPlatform platform;
-    setUp(() {
-      platform = FakeCalendarPlatform();
-      DeviceCalendarPlusPlatform.instance = platform;
-    });
-    final calendarSwitch = find.byKey(const Key('calendarSync'));
-
-    testWidgets('is absent without calendar support', (tester) async {
-      await pumpApp(tester);
-      expect(calendarSwitch, findsNothing);
-    });
-
-    testWidgets('turning it on writes the calendar', (tester) async {
-      late CalendarSync calendar;
-      await pumpApp(
-        tester,
-        initial: [sub('A', 980, DateTime(2026, 1, 5))],
-        calendar: () => calendar = CalendarSync(SharedPreferencesAsync()),
-      );
-      expect(tester.widget<Switch>(calendarSwitch).value, isFalse);
-      await tester.tap(calendarSwitch);
-      await tester.pumpAndSettle();
-      expect(tester.widget<Switch>(calendarSwitch).value, isTrue);
-      expect(calendar.enabled.value, isTrue);
-      expect(platform.events.map((e) => e.title), ['請求日: A']);
-    });
-
-    testWidgets('a refused permission explains and stays off', (tester) async {
-      platform.permission = 'denied';
-      await pumpApp(
-        tester,
-        calendar: () => CalendarSync(SharedPreferencesAsync()),
-      );
-      await tester.tap(calendarSwitch);
-      await tester.pumpAndSettle();
-      expect(tester.widget<Switch>(calendarSwitch).value, isFalse);
-      expect(find.text('カレンダーへのアクセスが許可されていません'), findsOneWidget);
-    });
-
-    testWidgets('a failed write shows a banner', (tester) async {
-      late CalendarSync calendar;
-      await pumpApp(
-        tester,
-        calendar: () => calendar = CalendarSync(SharedPreferencesAsync()),
-      );
-      expect(find.text('カレンダーに登録できませんでした'), findsNothing);
-      calendar.failed.value = true;
-      await tester.pumpAndSettle();
-      expect(find.text('カレンダーに登録できませんでした'), findsOneWidget);
-    });
   });
 }
