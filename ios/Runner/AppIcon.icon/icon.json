@@ -1,0 +1,39 @@
+{
+  "fill": {
+    "linear-gradient": [
+      "srgb:1.00000,0.62353,0.40784,1.00000",
+      "srgb:1.00000,0.41961,0.41961,1.00000"
+    ]
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "2_coin.svg",
+          "name": "2_coin",
+          "glass": true
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      }
+    },
+    {
+      "layers": [
+        {
+          "image-name": "1_calendar.svg",
+          "name": "1_calendar",
+          "glass": true
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

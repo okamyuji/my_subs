@@ -24,6 +24,10 @@ iOS実機向けにビルドするときは、Apple DeveloperのTeam IDを`ios/Fl
 
 pre-commitは、フォーマット、静的解析、テスト、カバレッジ80%以上の判定を順に実行します。pre-pushは接続中のAndroid端末でE2Eテストを実行するので、push前にエミュレータを起動しておいてください。GitHub Actionsのワークフローも、pull requestごとに同じ検証とE2Eテストを実行する構成です。
 
+## アプリアイコン
+
+アイコンの元絵は`tool/icon/gen.py`の中にSVGとして書いてあります。`python3 tool/icon/gen.py`を実行すると、iOS用のIcon Composer形式（`ios/Runner/AppIcon.icon`）と、Android用のアダプティブアイコン（前景・背景・テーマ用モノクロ）および旧形式のPNGが作り直されます。実行には[librsvg](https://wiki.gnome.org/Projects/LibRsvg)の`rsvg-convert`が必要です。
+
 ## 候補チップのファイル
 
 追加画面の上部には、よく使うサービスを選ぶ候補チップを出せます。候補は`assets/private/presets.json`に次の形式で書きます。
