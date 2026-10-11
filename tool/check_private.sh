@@ -36,7 +36,12 @@ if [ -n "$leaked" ]; then
   echo "$leaked" >&2
   exit 1
 fi
-staged=$(git grep --cached -h -e '' -- 'ios/*.pbxproj' 'ios/*.xcconfig')
+# git grep exits 1 when no file matches, so skip it when there is nothing to read.
+ios_files=$(git ls-files -- 'ios/*.pbxproj' 'ios/*.xcconfig')
+staged=
+if [ -n "$ios_files" ]; then
+  staged=$(git grep --cached -h -e '' -- 'ios/*.pbxproj' 'ios/*.xcconfig')
+fi
 if printf '%s\n' "$staged" | grep -Eqi "$team_id"; then
   echo "ios/ の追跡ファイルに Team ID が入っています。ios/Flutter/DevelopmentTeam.xcconfig（git 管理外）に移してください" >&2
   exit 1
