@@ -6,8 +6,8 @@ if [ -n "$leaked" ]; then
   echo "$leaked" >&2
   exit 1
 fi
-if git diff --cached -U0 -- ios/Runner.xcodeproj/project.pbxproj | grep -q '^+.*DEVELOPMENT_TEAM = '; then
-  echo "pre-commit: project.pbxproj に DEVELOPMENT_TEAM が入っています。ios/Flutter/DevelopmentTeam.xcconfig に移してください" >&2
+if git diff --cached -U0 -- 'ios/*.pbxproj' 'ios/*.xcconfig' | grep -Eqi '^\+.*(DEVELOPMENT_TEAM|DevelopmentTeam)(\[[^]]*\])*"? *= *[A-Z0-9]'; then
+  echo "pre-commit: ios/ の追跡ファイルに Team ID が入っています。ios/Flutter/DevelopmentTeam.xcconfig（git 管理外）に移してください" >&2
   exit 1
 fi
 dart format --output=none --set-exit-if-changed .
