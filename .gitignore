@@ -54,3 +54,4 @@ assets/private/*
 coverage/
 mutation-test-report/
 .superpowers/
+ios/Flutter/DevelopmentTeam.xcconfig

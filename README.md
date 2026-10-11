@@ -1,17 +1,36 @@
 # my_subs
 
-A new Flutter project.
+my_subsは、自分が払っているサブスクの金額と請求日を管理するFlutterアプリです。対応OSはAndroidとiOSで、データは[shared_preferences](https://pub.dev/packages/shared_preferences)を使って端末に保存します。アプリ自身はデータをサーバーへ送りません。OSの[Android自動バックアップ](https://developer.android.com/identity/data/autobackup)やiCloudバックアップには、ほかのアプリのデータと同じく含まれます。
 
-## Getting Started
+## できること
 
-This project is a starting point for a Flutter application.
+- サブスクを名前、カテゴリ、金額（円）、周期（毎月・3か月・半年・毎年）、初回請求日で登録します。
+- 一覧画面には、今月の支払額、月額換算、年額換算の合計が出ます。初回請求日が未来の件は、請求が始まるまで換算合計に含めません。
+- カレンダー画面は、請求日のある日に印を付けます。日付を押すと、その日に請求されるサブスクが下に並びます。
+- 分析画面は、カテゴリごとの月額換算を横棒と割合で表示します。
+- 請求日の当日、1日前、3日前、7日前のいずれかの9:00に通知を出せます。通知の予約には[flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications)を使っています。
 
-A few resources to get you started if this is your first Flutter project:
+## 開発環境の準備
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Flutter 3.47.7で開発しています。リポジトリを取得したら、git hookを有効にしてください。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+git config core.hooksPath .githooks
+```
+
+iOS実機向けにビルドするときは、Apple DeveloperのTeam IDを`ios/Flutter/DevelopmentTeam.xcconfig`に`DEVELOPMENT_TEAM = <Team ID>`の形で書きます。このファイルは`.gitignore`の対象です。Xcodeの署名画面でチームを選ぶと`project.pbxproj`にTeam IDが書き込まれてしまうので、署名画面での選択は避けてください。
+
+pre-commitは、フォーマット、静的解析、テスト、カバレッジ80%以上の判定を順に実行します。pre-pushは接続中のAndroid端末でE2Eテストを実行するので、push前にエミュレータを起動しておいてください。GitHub Actionsのワークフローも、pull requestごとに同じ検証とE2Eテストを実行する構成です。
+
+## 候補チップのファイル
+
+追加画面の上部には、よく使うサービスを選ぶ候補チップを出せます。候補は`assets/private/presets.json`に次の形式で書きます。
+
+```json
+[
+  { "name": "サービス名", "category": "video", "intervalMonths": 1 }
+]
+```
+
+`category`には`video`、`music`、`software`、`cloud`、`news`、`game`、`life`、`other`のいずれかを指定します。このファイルは個人の利用状況を含むため、`.gitignore`の対象です。誤って`git add -f`した場合も、pre-commitがcommitを止めます。ファイルが無いときは、候補チップを出さずにアプリが動作します。
