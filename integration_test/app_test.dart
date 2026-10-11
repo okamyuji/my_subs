@@ -19,7 +19,9 @@ void main() {
     await tester.tap(find.byKey(const Key('save')));
     await tester.pumpAndSettle();
     expect(find.text('E2E動画'), findsOneWidget);
-    expect(find.text('¥1,200'), findsWidgets);
+    // This month, monthly equivalent and the row itself.
+    expect(find.text('¥1,200'), findsNWidgets(3));
+    expect(find.text('¥14,400'), findsOneWidget);
 
     await tester.tap(find.text('カレンダー'));
     await tester.pumpAndSettle();
@@ -36,7 +38,8 @@ void main() {
     await tester.enterText(find.byKey(const Key('amount')), '1500');
     await tester.tap(find.byKey(const Key('save')));
     await tester.pumpAndSettle();
-    expect(find.text('¥1,500'), findsWidgets);
+    expect(find.text('¥1,500'), findsNWidgets(3));
+    expect(find.text('¥18,000'), findsOneWidget);
 
     await tester.tap(find.text('E2E動画'));
     await tester.pumpAndSettle();

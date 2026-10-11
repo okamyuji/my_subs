@@ -1,15 +1,6 @@
 #!/bin/sh
 set -e
-leaked=$(git diff --cached --name-only --diff-filter=ACMR | grep '^assets/private/' | grep -v '^assets/private/\.gitkeep$' || true)
-if [ -n "$leaked" ]; then
-  echo "pre-commit: assets/private/ のファイルは commit できません:" >&2
-  echo "$leaked" >&2
-  exit 1
-fi
-if git diff --cached -U0 -- 'ios/*.pbxproj' 'ios/*.xcconfig' | grep -Eqi '^\+.*(DEVELOPMENT_TEAM|DevelopmentTeam)(\[[^]]*\])*"? *= *[A-Z0-9]'; then
-  echo "pre-commit: ios/ の追跡ファイルに Team ID が入っています。ios/Flutter/DevelopmentTeam.xcconfig（git 管理外）に移してください" >&2
-  exit 1
-fi
+sh tool/check_private.sh
 dart format --output=none --set-exit-if-changed .
 flutter analyze --fatal-infos
 flutter test --coverage

@@ -5,4 +5,6 @@ if [ -z "$device" ]; then
   echo "pre-push: Android 端末が接続されていません。エミュレータを起動してから push してください" >&2
   exit 1
 fi
+# A permission prompt left by an earlier run blocks the next launch.
+adb -s "$device" shell am force-stop com.google.android.permissioncontroller
 flutter test integration_test -d "$device"
