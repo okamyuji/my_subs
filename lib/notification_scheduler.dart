@@ -19,6 +19,11 @@ tz.Location resolveLocation(String id) {
 }
 
 class NotificationScheduler {
+  NotificationScheduler({bool Function()? suppressed})
+    : _suppressed = suppressed ?? (() => false);
+
+  /// True while calendar sync owns the reminders; both would fire at once.
+  final bool Function() _suppressed;
   final _plugin = FlutterLocalNotificationsPlugin();
   Future<void> _queue = Future.value();
 
@@ -73,6 +78,10 @@ class NotificationScheduler {
 
   Future<void> _run(List<Subscription> subs) async {
     await _plugin.cancelAll();
+    if (_suppressed()) {
+      overLimit.value = false;
+      return;
+    }
     if (enabled.value != true) return;
     final (:plans, overLimit: over) = planNotifications(subs, DateTime.now());
     overLimit.value = over;
